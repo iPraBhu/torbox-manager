@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { RefreshCw, Grid3x3, Grid2x2, LayoutGrid } from 'lucide-react';
+import { RefreshCw, Grid3x3, Grid2x2, LayoutGrid, List } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { createTorBoxAPI } from '@/lib/torbox/endpoints';
 import { createMetadataResolver } from '@/lib/search/resolver';
 import type { MediaItem } from '@/types';
 import MediaGrid from '@/components/MediaGrid';
+import GroupedMediaGrid from '@/components/GroupedMediaGrid';
 import toast from 'react-hot-toast';
 
 export default function LibraryPage() {
@@ -15,6 +16,7 @@ export default function LibraryPage() {
   const [sortBy, setSortBy] = useState<'added' | 'title' | 'size'>('added');
   const [filterType, setFilterType] = useState<'all' | 'movie' | 'show'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<'grid' | 'grouped'>('grouped');
 
   const { data: torrents, isLoading, error, refetch } = useQuery({
     queryKey: ['library', apiKey],
@@ -192,26 +194,54 @@ export default function LibraryPage() {
             <option value="size">Size</option>
           </select>
 
-          {/* Grid Size */}
+          {/* View Mode Toggle */}
           <div className="flex items-center gap-1 bg-slate-800 rounded-lg p-1">
-            {(['small', 'medium', 'large'] as const).map((size) => {
-              const Icon = size === 'small' ? Grid3x3 : size === 'medium' ? Grid2x2 : LayoutGrid;
-              return (
-                <button
-                  key={size}
-                  onClick={() => settings.updateSettings({ gridSize: size })}
-                  className={`p-2 rounded transition-colors ${
-                    settings.gridSize === size
-                      ? 'bg-slate-700 text-primary-400'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                  title={size.charAt(0).toUpperCase() + size.slice(1)}
-                >
-                  <Icon className="w-4 h-4" />
-                </button>
-              );
-            })}
+            <button
+              onClick={() => setViewMode('grouped')}
+              className={`p-2 rounded transition-colors ${
+                viewMode === 'grouped'
+                  ? 'bg-slate-700 text-primary-400'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title="Grouped View"
+            >
+              <List className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-2 rounded transition-colors ${
+                viewMode === 'grid'
+                  ? 'bg-slate-700 text-primary-400'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title="Grid View"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
           </div>
+
+          {/* Grid Size (only in grid mode) */}
+          {viewMode === 'grid' && (
+            <div className="flex items-center gap-1 bg-slate-800 rounded-lg p-1">
+              {(['small', 'medium', 'large'] as const).map((size) => {
+                const Icon = size === 'small' ? Grid3x3 : size === 'medium' ? Grid2x2 : LayoutGrid;
+                return (
+                  <button
+                    key={size}
+                    onClick={() => settings.updateSettings({ gridSize: size })}
+                    className={`p-2 rounded transition-colors ${
+                      settings.gridSize === size
+                        ? 'bg-slate-700 text-primary-400'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                    title={size.charAt(0).toUpperCase() + size.slice(1)}
+                  >
+                    <Icon className="w-4 h-4" />
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
@@ -222,8 +252,12 @@ export default function LibraryPage() {
         </div>
       )}
 
-      {/* Media Grid */}
-      <MediaGrid items={sortedItems} isLoading={isLoading} error={error as Error} />
+      {/* Media Grid or Grouped View */}
+      {viewMode === 'grouped' ? (
+        <GroupedMediaGrid items={sortedItems} isLoading={isLoading} error={error as Error} />
+      ) : (
+        <MediaGrid items={sortedItems} isLoading={isLoading} error={error as Error} />
+      )}
     </div>
   );
 }

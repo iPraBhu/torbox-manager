@@ -2,6 +2,7 @@
 
 import { createTMDBClient, TMDBClient } from './tmdb';
 import { RPDBClient } from './rpdb';
+import { parseReleaseName } from '../utils/releaseParser';
 import type { MediaItem, MediaType, ExternalIds, Settings } from '@/types';
 
 export class MetadataResolver {
@@ -21,10 +22,15 @@ export class MetadataResolver {
     }
 
     try {
-      // Try to parse year from query
-      const yearMatch = query.match(/\((\d{4})\)|\b(\d{4})\b/);
-      const year = yearMatch ? parseInt(yearMatch[1] || yearMatch[2]) : undefined;
-      const cleanQuery = query.replace(/\(?\d{4}\)?/, '').trim();
+      // Parse the query to extract clean title and year
+      const parsed = parseReleaseName(query);
+      const cleanQuery = parsed.title;
+      const year = parsed.year;
+
+      // Determine type from parsed data
+      if (!type && parsed.season !== undefined) {
+        type = 'show';
+      }
 
       let results;
       
