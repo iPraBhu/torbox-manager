@@ -1,7 +1,8 @@
 // TorBox API Client
 // Based on https://api.torbox.app/docs
+// Proxied through Cloudflare Worker to bypass CORS
 
-const TORBOX_API_BASE = 'https://api.torbox.app/v1/api';
+const TORBOX_API_BASE = 'https://torbox-api.prabhu-tools.com/v1/api';
 
 export class TorBoxAPIError extends Error {
   constructor(
