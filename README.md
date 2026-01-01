@@ -152,33 +152,30 @@ google-chrome --disable-web-security --user-data-dir=/tmp/chrome-dev
 
 **Option 3: Deploy with Reverse Proxy (Production)**
 
-For production deployment, use a reverse proxy to bypass CORS:
+For production deployment, use a reverse proxy to bypass CORS. We've included a **ready-to-deploy Cloudflare Worker** in the `cloudflare-worker/` directory.
 
-1. **Cloudflare Workers** (Free tier available):
-```javascript
-export default {
-  async fetch(request) {
-    const url = new URL(request.url);
-    const targetUrl = 'https://api.torbox.app' + url.pathname;
-    
-    const response = await fetch(targetUrl, {
-      method: request.method,
-      headers: request.headers,
-      body: request.body,
-    });
-    
-    const newResponse = new Response(response.body, response);
-    newResponse.headers.set('Access-Control-Allow-Origin', '*');
-    return newResponse;
-  }
-}
+**Quick Deploy (5 minutes):**
+
+1. Go to [Cloudflare Workers Dashboard](https://dash.cloudflare.com/)
+2. Create a new Worker
+3. Copy code from `cloudflare-worker/worker.js` and paste it
+4. Click "Save and Deploy"
+5. Copy your worker URL (e.g., `https://torbox-proxy.your-subdomain.workers.dev`)
+6. Update `src/lib/torbox/client.ts`:
+   ```typescript
+   const TORBOX_API_BASE = 'https://torbox-proxy.your-subdomain.workers.dev/v1/api';
+   ```
+7. Rebuild: `npm run build`
+
+**Or use CLI:**
+```bash
+cd cloudflare-worker
+npm install -g wrangler
+wrangler login
+wrangler deploy
 ```
 
-2. **Vercel Edge Functions**: Create `/api/torbox/[...path].ts`
-3. **Netlify Edge Functions**: Similar approach
-4. **Self-hosted Proxy**: Use nginx or Caddy
-
-Then update `src/lib/torbox/client.ts` to point to your proxy URL instead of `https://api.torbox.app`.
+See [cloudflare-worker/README.md](cloudflare-worker/README.md) for full instructions, security enhancements, and custom domain setup.
 
 ### API Key Invalid
 
