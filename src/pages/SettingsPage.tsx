@@ -1,9 +1,13 @@
 import { useState } from 'react';
-import { Save, Image, Grid3x3 } from 'lucide-react';
+import { Save, Image, Grid3x3, User, Settings as SettingsIcon, BarChart3 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { useAuthStore } from '@/stores/authStore';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { createTorBoxAPI } from '@/lib/torbox/endpoints';
 import toast from 'react-hot-toast';
 
 export default function SettingsPage() {
+  const apiKey = useAuthStore((state) => state.apiKey);
   const settings = useSettingsStore();
   const [localSettings, setLocalSettings] = useState({
     rpdbEnabled: settings.rpdbEnabled,
@@ -11,6 +15,37 @@ export default function SettingsPage() {
     posterPreference: settings.posterPreference,
     gridSize: settings.gridSize,
     showBadges: settings.showBadges,
+  });
+
+  // TorBox account data
+  const { data: user } = useQuery({
+    queryKey: ['torbox-user', apiKey],
+    queryFn: async () => {
+      if (!apiKey) throw new Error('No API key');
+      const api = createTorBoxAPI(apiKey);
+      return api.getUser();
+    },
+    enabled: !!apiKey,
+  });
+
+  const { data: accountStats } = useQuery({
+    queryKey: ['torbox-stats', apiKey],
+    queryFn: async () => {
+      if (!apiKey) throw new Error('No API key');
+      const api = createTorBoxAPI(apiKey);
+      return api.getAccountStats();
+    },
+    enabled: !!apiKey,
+  });
+
+  const { data: userSettings } = useQuery({
+    queryKey: ['torbox-settings', apiKey],
+    queryFn: async () => {
+      if (!apiKey) throw new Error('No API key');
+      const api = createTorBoxAPI(apiKey);
+      return api.getUserSettings();
+    },
+    enabled: !!apiKey,
   });
 
   const handleSave = () => {
@@ -112,6 +147,116 @@ export default function SettingsPage() {
           </select>
         </div>
       </div>
+
+      {/* TorBox Account Settings */}
+      {apiKey && (
+        <div className="card p-6 space-y-6">
+          <div className="flex items-center gap-3 pb-4 border-b border-slate-800">
+            <User className="w-5 h-5 text-primary-500" />
+            <h2 className="text-xl font-semibold">TorBox Account</h2>
+          </div>
+
+          {/* Account Info */}
+          {user && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-800/50 rounded-lg">
+              <div>
+                <div className="text-sm text-slate-400">Email</div>
+                <div className="font-medium">{user.email}</div>
+              </div>
+              <div>
+                <div className="text-sm text-slate-400">Plan</div>
+                <div className="font-medium capitalize">{user.plan}</div>
+              </div>
+              <div>
+                <div className="text-sm text-slate-400">Member Since</div>
+                <div className="font-medium">{new Date(user.created_at).toLocaleDateString()}</div>
+              </div>
+              <div>
+                <div className="text-sm text-slate-400">Account Status</div>
+                <div className="font-medium text-green-400">Active</div>
+              </div>
+            </div>
+          )}
+
+          {/* Account Stats */}
+          {accountStats && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 pb-2 border-b border-slate-800">
+                <BarChart3 className="w-4 h-4 text-primary-500" />
+                <h3 className="font-medium">Account Statistics</h3>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center p-3 bg-slate-800/50 rounded-lg">
+                  <div className="text-2xl font-bold text-primary-400">{accountStats.total_torrents}</div>
+                  <div className="text-xs text-slate-400">Torrents</div>
+                </div>
+                <div className="text-center p-3 bg-slate-800/50 rounded-lg">
+                  <div className="text-2xl font-bold text-primary-400">{accountStats.total_usenet}</div>
+                  <div className="text-xs text-slate-400">Usenet</div>
+                </div>
+                <div className="text-center p-3 bg-slate-800/50 rounded-lg">
+                  <div className="text-2xl font-bold text-primary-400">{accountStats.total_webdownloads}</div>
+                  <div className="text-xs text-slate-400">Web Downloads</div>
+                </div>
+                <div className="text-center p-3 bg-slate-800/50 rounded-lg">
+                  <div className="text-2xl font-bold text-primary-400">{(accountStats.total_size / (1024 ** 4)).toFixed(1)} TB</div>
+                  <div className="text-xs text-slate-400">Total Size</div>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Downloaded:</span>
+                  <span>{(accountStats.total_downloaded / (1024 ** 3)).toFixed(1)} GB</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Uploaded:</span>
+                  <span>{(accountStats.total_uploaded / (1024 ** 3)).toFixed(1)} GB</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Ratio:</span>
+                  <span>{accountStats.current_ratio.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TorBox Settings */}
+          {userSettings && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 pb-2 border-b border-slate-800">
+                <SettingsIcon className="w-4 h-4 text-primary-500" />
+                <h3 className="font-medium">TorBox Settings</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Download Directory:</span>
+                  <span className="truncate ml-2">{userSettings.download_directory}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Max Concurrent Downloads:</span>
+                  <span>{userSettings.max_concurrent_downloads}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Max Torrent Size:</span>
+                  <span>{(userSettings.max_torrent_size / (1024 ** 3)).toFixed(0)} GB</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Max Usenet Size:</span>
+                  <span>{(userSettings.max_usenet_size / (1024 ** 3)).toFixed(0)} GB</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Max Web Download Size:</span>
+                  <span>{(userSettings.max_webdownload_size / (1024 ** 3)).toFixed(0)} GB</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Seed Until Ratio:</span>
+                  <span>{userSettings.seed_until_ratio}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Display Settings */}
       <div className="card p-6 space-y-6">

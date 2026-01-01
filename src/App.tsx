@@ -5,6 +5,7 @@ import { useSettingsStore } from './stores/settingsStore';
 import LoginPage from './pages/LoginPage';
 import LibraryPage from './pages/LibraryPage';
 import SearchPage from './pages/SearchPage';
+import TorrentSearchPage from './pages/TorrentSearchPage';
 import SettingsPage from './pages/SettingsPage';
 import Layout from './components/Layout';
 
@@ -25,6 +26,7 @@ function App() {
         <Route element={<Layout />}>
           <Route path="/library" element={<LibraryPage />} />
           <Route path="/search" element={<SearchPage />} />
+          <Route path="/torrent-search" element={<TorrentSearchPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="*" element={<Navigate to="/library" replace />} />
         </Route>

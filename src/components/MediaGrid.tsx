@@ -9,9 +9,12 @@ interface MediaGridProps {
   items: MediaItem[];
   isLoading: boolean;
   error: Error | null;
+  bulkMode?: boolean;
+  selectedItems?: Set<string>;
+  onToggleSelection?: (itemId: string) => void;
 }
 
-export default function MediaGrid({ items, isLoading, error }: MediaGridProps) {
+export default function MediaGrid({ items, isLoading, error, bulkMode = false, selectedItems = new Set(), onToggleSelection }: MediaGridProps) {
   const gridSize = useSettingsStore((state) => state.gridSize);
   const [selectedItem, setSelectedItem] = useState<MediaItem | null>(null);
 
@@ -62,6 +65,9 @@ export default function MediaGrid({ items, isLoading, error }: MediaGridProps) {
             key={item.id}
             item={item}
             onClick={() => setSelectedItem(item)}
+            bulkMode={bulkMode}
+            isSelected={selectedItems.has(item.id)}
+            onToggleSelection={() => onToggleSelection?.(item.id)}
           />
         ))}
       </div>

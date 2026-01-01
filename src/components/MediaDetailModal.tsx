@@ -1,4 +1,4 @@
-import { X, Download, Trash2, Film, Calendar, HardDrive, File } from 'lucide-react';
+import { X, Download, Trash2, Film, Calendar, HardDrive, File, Pause, Play, RotateCcw, CheckCircle, PlayCircle } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/authStore';
 import { createTorBoxAPI } from '@/lib/torbox/endpoints';
@@ -27,6 +27,82 @@ export default function MediaDetailModal({ item, onClose }: MediaDetailModalProp
     },
     onError: (error: Error) => {
       toast.error(`Failed to remove: ${error.message}`);
+    },
+  });
+
+  const pauseMutation = useMutation({
+    mutationFn: async () => {
+      if (!apiKey || !item.torbox) throw new Error('Missing data');
+      const api = createTorBoxAPI(apiKey);
+      return api.pauseTorrent(item.torbox.id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['library'] });
+      toast.success('Torrent paused');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to pause: ${error.message}`);
+    },
+  });
+
+  const resumeMutation = useMutation({
+    mutationFn: async () => {
+      if (!apiKey || !item.torbox) throw new Error('Missing data');
+      const api = createTorBoxAPI(apiKey);
+      return api.resumeTorrent(item.torbox.id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['library'] });
+      toast.success('Torrent resumed');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to resume: ${error.message}`);
+    },
+  });
+
+  const reannounceMutation = useMutation({
+    mutationFn: async () => {
+      if (!apiKey || !item.torbox) throw new Error('Missing data');
+      const api = createTorBoxAPI(apiKey);
+      return api.reannounceTorrent(item.torbox.id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['library'] });
+      toast.success('Reannounced to trackers');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to reannounce: ${error.message}`);
+    },
+  });
+
+  const recheckMutation = useMutation({
+    mutationFn: async () => {
+      if (!apiKey || !item.torbox) throw new Error('Missing data');
+      const api = createTorBoxAPI(apiKey);
+      return api.recheckTorrent(item.torbox.id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['library'] });
+      toast.success('Rechecking torrent...');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to recheck: ${error.message}`);
+    },
+  });
+
+  const streamMutation = useMutation({
+    mutationFn: async () => {
+      if (!apiKey || !item.torbox) throw new Error('Missing data');
+      const api = createTorBoxAPI(apiKey);
+      const link = await api.requestStreamLink('torrent', item.torbox.id);
+      return link;
+    },
+    onSuccess: (link) => {
+      window.open(link, '_blank');
+      toast.success('Stream opened');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to get stream link: ${error.message}`);
     },
   });
 
@@ -158,6 +234,56 @@ export default function MediaDetailModal({ item, onClose }: MediaDetailModalProp
                 >
                   <Download className="w-4 h-4" />
                   <span>Download</span>
+                </button>
+
+                <button
+                  onClick={() => streamMutation.mutate()}
+                  disabled={streamMutation.isPending}
+                  className="btn btn-secondary flex items-center gap-2"
+                >
+                  <PlayCircle className="w-4 h-4" />
+                  <span>Stream</span>
+                </button>
+
+                {/* Control buttons based on status */}
+                {item.torbox?.status === 'downloading' && (
+                  <button
+                    onClick={() => pauseMutation.mutate()}
+                    disabled={pauseMutation.isPending}
+                    className="btn btn-secondary flex items-center gap-2"
+                  >
+                    <Pause className="w-4 h-4" />
+                    <span>Pause</span>
+                  </button>
+                )}
+
+                {item.torbox?.status === 'paused' && (
+                  <button
+                    onClick={() => resumeMutation.mutate()}
+                    disabled={resumeMutation.isPending}
+                    className="btn btn-secondary flex items-center gap-2"
+                  >
+                    <Play className="w-4 h-4" />
+                    <span>Resume</span>
+                  </button>
+                )}
+
+                <button
+                  onClick={() => reannounceMutation.mutate()}
+                  disabled={reannounceMutation.isPending}
+                  className="btn btn-secondary flex items-center gap-2"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  <span>Reannounce</span>
+                </button>
+
+                <button
+                  onClick={() => recheckMutation.mutate()}
+                  disabled={recheckMutation.isPending}
+                  className="btn btn-secondary flex items-center gap-2"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Recheck</span>
                 </button>
 
                 <button

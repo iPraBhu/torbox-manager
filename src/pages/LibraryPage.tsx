@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { RefreshCw, Grid3x3, Grid2x2, LayoutGrid, List } from 'lucide-react';
+import { RefreshCw, Grid3x3, Grid2x2, LayoutGrid, List, Trash2, Pause, Play, CheckSquare, Square } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { createTorBoxAPI } from '@/lib/torbox/endpoints';
@@ -17,6 +17,8 @@ export default function LibraryPage() {
   const [filterType, setFilterType] = useState<'all' | 'movie' | 'show'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'grouped'>('grouped');
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  const [bulkMode, setBulkMode] = useState(false);
 
   const { data: torrents, isLoading, error, refetch } = useQuery({
     queryKey: ['library', apiKey],
@@ -110,6 +112,89 @@ export default function LibraryPage() {
     });
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedItems.size === 0) return;
+    
+    if (!window.confirm(`Delete ${selectedItems.size} selected items?`)) return;
+    
+    if (!apiKey) return;
+    const api = createTorBoxAPI(apiKey);
+    
+    try {
+      const ids = Array.from(selectedItems).map(id => {
+        const item = mediaItems?.find(m => m.id === id);
+        return item?.torbox?.id;
+      }).filter(Boolean) as number[];
+      
+      await api.bulkDeleteTorrents(ids);
+      setSelectedItems(new Set());
+      refetch();
+      toast.success(`Deleted ${ids.length} items`);
+    } catch (error) {
+      toast.error('Bulk delete failed');
+    }
+  };
+
+  const handleBulkPause = async () => {
+    if (selectedItems.size === 0) return;
+    
+    if (!apiKey) return;
+    const api = createTorBoxAPI(apiKey);
+    
+    try {
+      const promises = Array.from(selectedItems).map(id => {
+        const item = mediaItems?.find(m => m.id === id);
+        return item?.torbox?.id ? api.pauseTorrent(item.torbox.id) : Promise.resolve();
+      });
+      
+      await Promise.all(promises);
+      setSelectedItems(new Set());
+      refetch();
+      toast.success(`Paused ${selectedItems.size} items`);
+    } catch (error) {
+      toast.error('Bulk pause failed');
+    }
+  };
+
+  const handleBulkResume = async () => {
+    if (selectedItems.size === 0) return;
+    
+    if (!apiKey) return;
+    const api = createTorBoxAPI(apiKey);
+    
+    try {
+      const promises = Array.from(selectedItems).map(id => {
+        const item = mediaItems?.find(m => m.id === id);
+        return item?.torbox?.id ? api.resumeTorrent(item.torbox.id) : Promise.resolve();
+      });
+      
+      await Promise.all(promises);
+      setSelectedItems(new Set());
+      refetch();
+      toast.success(`Resumed ${selectedItems.size} items`);
+    } catch (error) {
+      toast.error('Bulk resume failed');
+    }
+  };
+
+  const toggleItemSelection = (itemId: string) => {
+    const newSelected = new Set(selectedItems);
+    if (newSelected.has(itemId)) {
+      newSelected.delete(itemId);
+    } else {
+      newSelected.add(itemId);
+    }
+    setSelectedItems(newSelected);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedItems.size === sortedItems.length) {
+      setSelectedItems(new Set());
+    } else {
+      setSelectedItems(new Set(sortedItems.map(item => item.id)));
+    }
+  };
+
   // Filter and sort
   const filteredItems = mediaItems?.filter((item) => {
     if (filterType !== 'all' && item.type !== filterType) return false;
@@ -148,6 +233,13 @@ export default function LibraryPage() {
 
         <div className="flex items-center gap-2">
           <button
+            onClick={() => setBulkMode(!bulkMode)}
+            className={`btn ${bulkMode ? 'btn-primary' : 'btn-secondary'} flex items-center gap-2`}
+          >
+            <CheckSquare className="w-4 h-4" />
+            <span>{bulkMode ? 'Exit Bulk' : 'Bulk Select'}</span>
+          </button>
+          <button
             onClick={handleRefresh}
             disabled={isLoading}
             className="btn btn-secondary flex items-center space-x-2"
@@ -157,6 +249,59 @@ export default function LibraryPage() {
           </button>
         </div>
       </div>
+
+      {/* Bulk Actions */}
+      {bulkMode && (
+        <div className="card p-4 animate-slide-up">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={toggleSelectAll}
+                className="btn btn-secondary flex items-center gap-2"
+              >
+                {selectedItems.size === sortedItems.length ? (
+                  <CheckSquare className="w-4 h-4" />
+                ) : (
+                  <Square className="w-4 h-4" />
+                )}
+                <span>
+                  {selectedItems.size === sortedItems.length ? 'Deselect All' : 'Select All'}
+                </span>
+              </button>
+              <span className="text-sm text-slate-400">
+                {selectedItems.size} of {sortedItems.length} selected
+              </span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleBulkResume}
+                disabled={selectedItems.size === 0}
+                className="btn btn-secondary flex items-center gap-2"
+              >
+                <Play className="w-4 h-4" />
+                <span>Resume</span>
+              </button>
+              <button
+                onClick={handleBulkPause}
+                disabled={selectedItems.size === 0}
+                className="btn btn-secondary flex items-center gap-2"
+              >
+                <Pause className="w-4 h-4" />
+                <span>Pause</span>
+              </button>
+              <button
+                onClick={handleBulkDelete}
+                disabled={selectedItems.size === 0}
+                className="btn btn-secondary flex items-center gap-2 hover:bg-red-600"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Delete</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filters and Controls */}
       <div className="card p-4">
@@ -254,9 +399,20 @@ export default function LibraryPage() {
 
       {/* Media Grid or Grouped View */}
       {viewMode === 'grouped' ? (
-        <GroupedMediaGrid items={sortedItems} isLoading={isLoading} error={error as Error} />
+        <GroupedMediaGrid 
+          items={sortedItems} 
+          isLoading={isLoading} 
+          error={error as Error} 
+        />
       ) : (
-        <MediaGrid items={sortedItems} isLoading={isLoading} error={error as Error} />
+        <MediaGrid 
+          items={sortedItems} 
+          isLoading={isLoading} 
+          error={error as Error}
+          bulkMode={bulkMode}
+          selectedItems={selectedItems}
+          onToggleSelection={toggleItemSelection}
+        />
       )}
     </div>
   );

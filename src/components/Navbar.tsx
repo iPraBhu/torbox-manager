@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Film, Search, Settings, LogOut, Menu, X } from 'lucide-react';
+import { Film, Search, Settings, LogOut, Menu, X, Download } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import toast from 'react-hot-toast';
 
@@ -18,7 +18,8 @@ export default function Navbar() {
 
   const navItems = [
     { path: '/library', icon: Film, label: 'Library' },
-    { path: '/search', icon: Search, label: 'Search' },
+    { path: '/search', icon: Search, label: 'Metadata Search' },
+    { path: '/torrent-search', icon: Download, label: 'Torrent Search' },
     { path: '/settings', icon: Settings, label: 'Settings' },
   ];
 

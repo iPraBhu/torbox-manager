@@ -30,9 +30,14 @@ export class TorBoxClient {
     
     const headers: HeadersInit = {
       'Authorization': `Bearer ${this.apiKey}`,
-      'Content-Type': 'application/json',
       ...options.headers,
     };
+
+    // Don't set Content-Type for FormData, let browser set it with boundary
+    const isFormData = options.body instanceof FormData;
+    if (!isFormData) {
+      (headers as any)['Content-Type'] = 'application/json';
+    }
 
     try {
       const response = await fetch(url, {
@@ -79,9 +84,10 @@ export class TorBoxClient {
   }
 
   async post<T>(endpoint: string, data?: unknown): Promise<T> {
+    const isFormData = data instanceof FormData;
     return this.request<T>(endpoint, {
       method: 'POST',
-      body: data ? JSON.stringify(data) : undefined,
+      body: isFormData ? data : (data ? JSON.stringify(data) : undefined),
     });
   }
 

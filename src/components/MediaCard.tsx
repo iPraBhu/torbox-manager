@@ -1,13 +1,16 @@
-import { Film, Check } from 'lucide-react';
+import { Film, Check, CheckSquare, Square } from 'lucide-react';
 import type { MediaItem } from '@/types';
 import { useSettingsStore } from '@/stores/settingsStore';
 
 interface MediaCardProps {
   item: MediaItem;
   onClick: () => void;
+  bulkMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelection?: () => void;
 }
 
-export default function MediaCard({ item, onClick }: MediaCardProps) {
+export default function MediaCard({ item, onClick, bulkMode = false, isSelected = false, onToggleSelection }: MediaCardProps) {
   const showBadges = useSettingsStore((state) => state.showBadges);
 
   const formatSize = (bytes?: number) => {
@@ -53,6 +56,29 @@ export default function MediaCard({ item, onClick }: MediaCardProps) {
                 {item.type.toUpperCase()}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Bulk Selection Checkbox */}
+        {bulkMode && (
+          <div className="absolute top-2 left-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleSelection?.();
+              }}
+              className={`p-1 rounded transition-colors ${
+                isSelected
+                  ? 'bg-primary-500 text-white'
+                  : 'bg-black/50 text-white hover:bg-black/70'
+              }`}
+            >
+              {isSelected ? (
+                <CheckSquare className="w-4 h-4" />
+              ) : (
+                <Square className="w-4 h-4" />
+              )}
+            </button>
           </div>
         )}
       </div>
