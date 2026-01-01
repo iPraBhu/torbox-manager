@@ -152,30 +152,32 @@ google-chrome --disable-web-security --user-data-dir=/tmp/chrome-dev
 
 **Option 3: Deploy with Reverse Proxy (Production)**
 
-For production deployment, use a reverse proxy to bypass CORS. We've included a **ready-to-deploy Cloudflare Worker** in the `cloudflare-worker/` directory.
+For production deployment, use the **included Cloudflare Worker** that's ready to deploy directly from this GitHub repository.
 
-**Quick Deploy (5 minutes):**
+**🚀 Quick Deploy (Choose One):**
 
-1. Go to [Cloudflare Workers Dashboard](https://dash.cloudflare.com/)
-2. Create a new Worker
-3. Copy code from `cloudflare-worker/worker.js` and paste it
-4. Click "Save and Deploy"
-5. Copy your worker URL (e.g., `https://torbox-proxy.your-subdomain.workers.dev`)
-6. Update `src/lib/torbox/client.ts`:
-   ```typescript
-   const TORBOX_API_BASE = 'https://torbox-proxy.your-subdomain.workers.dev/v1/api';
-   ```
-7. Rebuild: `npm run build`
+**A) Automatic Git Deployment (Recommended)**
+1. Go to [Cloudflare Dashboard](https://dash.cloudflare.com/) → **Workers & Pages**
+2. Click **Create** → **Workers** → **Connect to Git**
+3. Select this repository: `iPraBhu/torbox-manager`
+4. Cloudflare auto-detects `wrangler.toml` and deploys your worker
+5. Copy your worker URL: `https://torbox-proxy.YOUR-SUBDOMAIN.workers.dev`
+6. Update `src/lib/torbox/client.ts` line 4 with your worker URL
+7. Done! Future pushes auto-deploy both app and worker
 
-**Or use CLI:**
+**B) GitHub Actions (CI/CD)**
+1. Get Cloudflare API Token from [here](https://dash.cloudflare.com/profile/api-tokens)
+2. Add to repo secrets: `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`
+3. Push to main - GitHub Actions deploys automatically
+4. See `.github/workflows/deploy-worker.yml` for details
+
+**C) Manual CLI Deploy**
 ```bash
-cd cloudflare-worker
-npm install -g wrangler
-wrangler login
-wrangler deploy
+npm install
+npm run deploy:worker  # Deploys immediately
 ```
 
-See [cloudflare-worker/README.md](cloudflare-worker/README.md) for full instructions, security enhancements, and custom domain setup.
+See [WORKER_DEPLOYMENT.md](WORKER_DEPLOYMENT.md) for complete instructions, GitHub Actions setup, custom domains, and monitoring.
 
 ### API Key Invalid
 

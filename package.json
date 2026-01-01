@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "deploy:worker": "wrangler deploy",
+    "dev:worker": "wrangler dev"
   },
   "dependencies": {
     "react": "^18.2.0",
@@ -34,6 +36,7 @@
     "typescript": "^5.2.2",
     "vite": "^5.0.8",
     "vite-plugin-pwa": "^0.17.4",
-    "workbox-window": "^7.0.0"
+    "workbox-window": "^7.0.0",
+    "wrangler": "^3.78.0"
   }
 }

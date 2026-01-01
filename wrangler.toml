@@ -2,6 +2,9 @@ name = "torbox-proxy"
 main = "worker.js"
 compatibility_date = "2024-01-01"
 
+# Automatically deploy when pushing to GitHub
+# Connect your GitHub repo at: https://dash.cloudflare.com/
+
 # Uncomment and configure for custom domain
 # routes = [
 #   { pattern = "torbox-api.yourdomain.com/*", zone_name = "yourdomain.com" }
@@ -9,6 +12,9 @@ compatibility_date = "2024-01-01"
 
 # Workers Free Tier: 100,000 requests/day
 # Workers Paid: Unlimited requests at $5/10M requests
+
+[build]
+command = ""
 
 [env.production]
 name = "torbox-proxy"
